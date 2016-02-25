@@ -2783,6 +2783,73 @@ SIDX_C_DLL uint32_t IndexProperty_GetOverwrite(IndexPropertyH hProp)
 	return 0;
 }
 
+SIDX_C_DLL RTError IndexProperty_SetReadonly(IndexPropertyH hProp,
+											uint32_t value)
+{
+	VALIDATE_POINTER1(hProp, "IndexProperty_SetReadonly", RT_Failure);
+	Tools::PropertySet* prop = static_cast<Tools::PropertySet*>(hProp);
+
+	try
+	{
+		if (value > 1 ) {
+			Error_PushError(RT_Failure,
+							"Readonly is a boolean value and must be 1 or 0",
+							"IndexProperty_SetReadonly");
+			return RT_Failure;
+		}
+		Tools::Variant var;
+		var.m_varType = Tools::VT_BOOL;
+		var.m_val.blVal = value != 0;
+		prop->setProperty("Readonly", var);
+	} catch (Tools::Exception& e)
+	{
+		Error_PushError(RT_Failure,
+						e.what().c_str(),
+						"IndexProperty_SetReadonly");
+		return RT_Failure;
+	} catch (std::exception const& e)
+	{
+		Error_PushError(RT_Failure,
+						e.what(),
+						"IndexProperty_SetReadonly");
+		return RT_Failure;
+	} catch (...) {
+		Error_PushError(RT_Failure,
+						"Unknown Error",
+						"IndexProperty_SetReadonly");
+		return RT_Failure;
+	}
+	return RT_None;
+}
+
+SIDX_C_DLL uint32_t IndexProperty_GetReadonly(IndexPropertyH hProp)
+{
+	VALIDATE_POINTER1(hProp, "IndexProperty_GetReadonly", 0);
+	Tools::PropertySet* prop = static_cast<Tools::PropertySet*>(hProp);
+
+	Tools::Variant var;
+	var = prop->getProperty("Readonly");
+
+	if (var.m_varType != Tools::VT_EMPTY)
+	{
+		if (var.m_varType != Tools::VT_BOOL) {
+			Error_PushError(RT_Failure,
+							"Property Readonly must be Tools::VT_BOOL",
+							"IndexProperty_GetReadonly");
+			return 0;
+		}
+
+		return var.m_val.blVal;
+	}
+
+	// return nothing for an error
+	Error_PushError(RT_Failure,
+					"Property Readonly was empty",
+					"IndexProperty_GetReadonly");
+	return 0;
+}
+
+
 
 SIDX_C_DLL RTError IndexProperty_SetFillFactor(	  IndexPropertyH hProp,
 												double value)

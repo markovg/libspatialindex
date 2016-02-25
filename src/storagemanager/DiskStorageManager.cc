@@ -131,8 +131,18 @@ DiskStorageManager::DiskStorageManager(Tools::PropertySet& ps) : m_pageSize(0), 
 
 	// Open/Create flag.
 	bool bOverwrite = false;
+	bool bReadonly = false;
 	bool bFileExists = false;
 	std::streamoff length = 0;
+	
+	var = ps.getProperty("Readonly");
+
+	if (var.m_varType != Tools::VT_EMPTY)
+	{
+		if (var.m_varType != Tools::VT_BOOL)
+			throw Tools::IllegalArgumentException("SpatialIndex::DiskStorageManager: Property Readonly must be Tools::VT_BOOL");
+		bReadonly = var.m_val.blVal;
+	}
 	
 	var = ps.getProperty("Overwrite");
 
@@ -167,8 +177,18 @@ DiskStorageManager::DiskStorageManager(Tools::PropertySet& ps) : m_pageSize(0), 
 		// check if file exists.
 		bFileExists = CheckFilesExists(ps);
 
+		// check if read-only was specified
+		if (bFileExists == true && bReadonly == true)
+		{
+            std::ios_base::openmode mode = std::ios::in | std::ios::binary;
+			m_indexFile.open(sIndexFile.c_str(), mode);
+			m_dataFile.open(sDataFile.c_str(), mode);
+
+			if (m_indexFile.fail() || m_dataFile.fail())
+				throw Tools::IllegalArgumentException("SpatialIndex::DiskStorageManager: Index/Data file cannot be read (ro-mode!).");
+		}
 		// check if file can be read/written.
-		if (bFileExists == true && bOverwrite == false)
+		else if (bFileExists == true && bOverwrite == false)
 		{
             std::ios_base::openmode mode = std::ios::in | std::ios::out | std::ios::binary;
 			m_indexFile.open(sIndexFile.c_str(), mode);
